@@ -1,0 +1,1 @@
+# abjadiyat-subscriptions-management
