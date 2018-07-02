@@ -22,7 +22,7 @@ class App extends Component {
     return (
       <Switch>
         <Route exact path="/" component={UnauthorizedLayout} />
-        <PrivateRoute exact path="/" component={AuthorizedLayout} />
+        <PrivateRoute path="/dashboard/" component={AuthorizedLayout} />
         <Route component={UnauthorizedLayout} />
       </Switch>
     );
