@@ -1,0 +1,97 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+general:
+  branches:
+    only:
+      - dev
+      - staging
+      - preprod
+      - prod
+jobs:
+  build:
+    docker:
+      - image: circleci/node:7.10
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      - run:
+          name: Build and publish Docker image
+          command: |
+            TAG=$CIRCLE_BUILD_NUM
+            APP_NAME=abjadiyat-subscription-management-frontend
+            DOCKER_IMAGE_NAME=$APP_NAME-$CIRCLE_BRANCH
+            npm install
+            cp /home/circleci/repo/dist .
+            docker build -t $DOCKER_IMAGE_NAME --build-arg SPRING_PROFILE=$CIRCLE_BRANCH .
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -b ~/bin/aws
+            docker_login=$(~/bin/aws ecr get-login --no-include-email)
+            ECR_REGISTRY=`echo $docker_login | sed 's|.*https://||'`
+            eval "$docker_login"
+            docker images
+            docker tag $DOCKER_IMAGE_NAME:latest $ECR_REGISTRY/$DOCKER_IMAGE_NAME:latest
+            docker tag $DOCKER_IMAGE_NAME:latest $ECR_REGISTRY/$DOCKER_IMAGE_NAME:$TAG
+            docker push $ECR_REGISTRY/$DOCKER_IMAGE_NAME:latest
+            docker push $ECR_REGISTRY/$DOCKER_IMAGE_NAME:$TAG
+
+      - run:
+          name: Deploy Docker container to EB
+          command: |
+
+            eval "RDS_HOSTNAME=\$RDS_HOSTNAME_${CIRCLE_BRANCH}"
+            eval "RDS_PORT=\$RDS_PORT_${CIRCLE_BRANCH}"
+            eval "RDS_DB_NAME=\$RDS_DB_NAME_${CIRCLE_BRANCH}"
+            eval "TCH_DB_NAME=\$TCH_DB_NAME_${CIRCLE_BRANCH}"
+            eval "RDS_USERNAME=\$RDS_USERNAME_$CIRCLE_BRANCH"
+            eval "RDS_PASSWORD=\$RDS_PASSWORD_${CIRCLE_BRANCH}"
+
+            eval "TWILLIO_ACCOUNT_SID=\$TWILLIO_ACCOUNT_SID_${CIRCLE_BRANCH}"
+            eval "TWILLIO_AUTH_TOKEN=\$TWILLIO_AUTH_TOKEN_${CIRCLE_BRANCH}"
+            eval "TWILLIO_NUMBER=\$TWILLIO_NUMBER_${CIRCLE_BRANCH}"
+
+            eval "ABJADIYAT_LINK=\$ABJADIYAT_LINK_${CIRCLE_BRANCH}"
+
+            eval "MEMORY_SIZE=\$MEMORY_SIZE_${CIRCLE_BRANCH}"
+
+
+            sed -i -e "s/BRANCH_PLACEHOLDER/$CIRCLE_BRANCH/g" Dockerrun.aws.json
+            sed -i -e "s/\"MEMORY_SIZE_PLACEHOLDER\"/$MEMORY_SIZE/g" Dockerrun.aws.json
+            sed -i -e "s/RDS_HOSTNAME_PLACEHOLDER/$RDS_HOSTNAME/g" Dockerrun.aws.json
+            sed -i -e "s/RDS_PORT_PLACEHOLDER/$RDS_PORT/g" Dockerrun.aws.json
+            sed -i -e "s/RDS_DB_NAME_PLACEHOLDER/$RDS_DB_NAME/g" Dockerrun.aws.json
+            sed -i -e "s/TCH_DB_NAME_PLACEHOLDER/$TCH_DB_NAME/g" Dockerrun.aws.json
+            sed -i -e "s/RDS_USERNAME_PLACEHOLDER/$RDS_USERNAME/g" Dockerrun.aws.json
+            sed -i -e "s/RDS_PASSWORD_PLACEHOLDER/$RDS_PASSWORD/g" Dockerrun.aws.json
+            sed -i -e "s/TWILLIO_ACCOUNT_SID_PLACEHOLDER/$TWILLIO_ACCOUNT_SID/g" Dockerrun.aws.json
+            sed -i -e "s/TWILLIO_AUTH_TOKEN_PLACEHOLDER/$TWILLIO_AUTH_TOKEN/g" Dockerrun.aws.json
+            sed -i -e "s/TWILLIO_NUMBER_PLACEHOLDER/$TWILLIO_NUMBER/g" Dockerrun.aws.json
+            sed -i -e "s|ABJADIYAT_LINK_PLACEHOLDER|$ABJADIYAT_LINK|g" Dockerrun.aws.json
+
+            sed -i -e "s|AWS_S3_ENDPOINT_URL_PLACEHOLDER|$AWS_S3_ENDPOINT_URL|g" Dockerrun.aws.json
+            sed -i -e "s|AWS_S3_ACCESS_KEY_PLACEHOLDER|$AWS_S3_ACCESS_KEY|g" Dockerrun.aws.json
+            sed -i -e "s|AWS_S3_SECRET_KEY_PLACEHOLDER|$AWS_S3_SECRET_KEY|g" Dockerrun.aws.json
+            git config --global user.email "you@example.com"
+            git config --global user.name "Your Name"
+            git add .
+            git commit -m "circle-commit: Commit Dockerrun.aws.json with the appropriate docker image name"
+            sudo apt-get -y -qq update
+            sudo apt-get install python-pip python-dev build-essential
+            sudo pip install awsebcli --upgrade
+            eb deploy --timeout 25
