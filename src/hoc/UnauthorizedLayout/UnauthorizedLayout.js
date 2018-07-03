@@ -9,16 +9,16 @@ import "./UnauthorizedLayout.scss";
 export default class UnauthorizedLayout extends Component {
   componentDidMount() {
     if (localStorage.getItem("token")) {
-      this.props.history.replace("/dashboard/subscriptions");
+      this.props.history.replace("/dashboard/orders");
     }
   }
 
   render() {
     return (
       <Switch>
+        <Route exact path="/" component={Login} />
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
-        <Route exact path="/" component={Login} />
       </Switch>
     );
   }

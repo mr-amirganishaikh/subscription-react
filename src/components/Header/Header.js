@@ -12,9 +12,9 @@ export default class Header extends Component {
           </strong>
           <ul className="navbar-nav ml-auto">
             <li className="nav-item">
-              <Link to="/dashboard/subscriptions" className="nav-link">
+              <Link to="/dashboard/orders" className="nav-link">
                 <i className="mr-1 material-icons">list</i>
-                <span>Subscriptions</span>
+                <span>Orders</span>
               </Link>
             </li>
             <li className="nav-item">

@@ -44,11 +44,9 @@
 }
 
 #confirmCode {
-  opacity: 0;
-  height: 0;
+  display: none;
   &.show {
-    opacity: 1;
-    height: auto;
+    display: block;
   }
 }
 

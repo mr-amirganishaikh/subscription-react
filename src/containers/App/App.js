@@ -21,8 +21,8 @@ class App extends Component {
   render() {
     return (
       <Switch>
-        <Route exact path="/" component={UnauthorizedLayout} />
         <PrivateRoute path="/dashboard/" component={AuthorizedLayout} />
+        <Route exact path="/" component={UnauthorizedLayout} />
         <Route component={UnauthorizedLayout} />
       </Switch>
     );

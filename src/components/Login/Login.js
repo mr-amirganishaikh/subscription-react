@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import { Link } from "react-router-dom";
+//import { Link } from "react-router-dom";
+import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 import {
   Container,
   Row,
@@ -20,11 +21,19 @@ class Login extends Component {
       username: "",
       countryCode: "",
       number: "",
+      confirmCodeFields: ["1", "2", "3", "4"],
       disabledRequestForm: false,
-      confirmCodeState: false,
-      disabledConfirmForm: true
+      disabledConfirmForm: true,
+      confirmCodeShow: false
     };
   }
+
+  inputChangeHandler = event => {
+    event.target.classList.contains("code-control")
+      ? this.codeControlChangeHandler(event.target)
+      : this.setState({ [event.target.name]: event.target.value });
+    console.log("input change triggered");
+  };
 
   codeControlChangeHandler = target => {
     if (
@@ -43,26 +52,42 @@ class Login extends Component {
     }
   };
 
-  inputChangeHandler = event => {
-    event.target.classList.contains("code-control")
-      ? this.codeControlChangeHandler(event.target)
-      : this.setState({ [event.target.name]: event.target.value });
-  };
-
   requestCodeSubmit = event => {
     event.preventDefault();
     this.setState({
       disabledRequestForm: true,
       disabledConfirmForm: false,
-      confirmCodeState: true
+      confirmCodeShow: true
     });
+    console.log("request code clicked");
+  };
+
+  resendCodeClickHandler = event => {
+    event.preventDefault();
+    console.log("resend code clicked");
   };
 
   loginHandler = event => {
     event.preventDefault();
     localStorage.setItem("token", "isAuthenticated");
     localStorage.setItem("username", this.state.username);
-    this.props.history.push("/dashboard/subscriptions");
+    localStorage.setItem("subscriberId", 1462);
+    this.props.history.push("/dashboard/orders");
+    console.log("login completed with form");
+  };
+
+  fbLoginBtnClickHandler = renderProps => {
+    this.setState({ disabledRequestForm: true });
+    renderProps.onClick();
+    console.log("fb login button clicked");
+  };
+
+  fbLoginSuccessCb = response => {
+    localStorage.setItem("token", response.accessToken);
+    localStorage.setItem("username", response.name);
+    localStorage.setItem("subscriberId", 1462);
+    this.props.history.push("/dashboard/orders");
+    console.log("login completed with facebook");
   };
 
   render() {
@@ -79,9 +104,26 @@ class Login extends Component {
 
               <CardBody>
                 <div className="text-center mt-2">
-                  <Button color="facebook">
-                    <i className="fa fa-facebook" /> Login with facebook
-                  </Button>
+                  <FacebookLogin
+                    appId="177949409737513"
+                    autoLoad={false}
+                    fields="name,email,picture"
+                    callback={this.fbLoginSuccessCb}
+                    render={renderProps => {
+                      return (
+                        <Button
+                          color="facebook"
+                          onClick={() =>
+                            this.fbLoginBtnClickHandler({
+                              ...renderProps
+                            })
+                          }
+                        >
+                          <i className="fa fa-facebook" /> Login with facebook
+                        </Button>
+                      );
+                    }}
+                  />
                 </div>
 
                 <div className="login-separator">
@@ -89,42 +131,51 @@ class Login extends Component {
                   <span>OR</span>
                 </div>
 
-                <form onSubmit={this.requestCodeSubmit}>
+                <form id="requestCodeForm" onSubmit={this.requestCodeSubmit}>
                   <Row className="no-gutters">
                     <div className="w-100">
                       <Input
                         id="username"
                         name="username"
+                        required
                         label="Type your name"
                         onChange={this.inputChangeHandler}
                         disabled={this.state.disabledRequestForm ? true : false}
                       />
                     </div>
-
-                    <div className="md-form col-3">
-                      <select
-                        id="countryCode"
-                        name="countryCode"
-                        className="form-control pb-0"
-                        onChange={this.inputChangeHandler}
-                        disabled={this.state.disabledRequestForm ? true : false}
-                      >
-                        <option value="+971">+971</option>
-                        <option value="+91">+91</option>
-                      </select>
-                    </div>
-                    <div className="col-9">
-                      <Input
-                        id="number"
-                        name="number"
-                        label="Type your number"
-                        onChange={this.inputChangeHandler}
-                        disabled={this.state.disabledRequestForm ? true : false}
-                      />
+                    <div className="w-100">
+                      <div className="md-form input-group">
+                        <div className="input-group-prepend">
+                          <select
+                            id="countryCode"
+                            name="countryCode"
+                            required
+                            className="form-control pb-0"
+                            onChange={this.inputChangeHandler}
+                            disabled={
+                              this.state.disabledRequestForm ? true : false
+                            }
+                          >
+                            <option value="+971">+971</option>
+                            <option value="+91">+91</option>
+                          </select>
+                        </div>
+                        <input
+                          id="number"
+                          className="form-control"
+                          name="number"
+                          required
+                          placeholder="Type your number"
+                          onChange={this.inputChangeHandler}
+                          disabled={
+                            this.state.disabledRequestForm ? true : false
+                          }
+                        />
+                      </div>
                     </div>
                     <div className="w-100" />
 
-                    <Col>
+                    <Col className="text-right">
                       <Button
                         color="primary"
                         type="submit"
@@ -133,81 +184,52 @@ class Login extends Component {
                         Request Code
                       </Button>
                     </Col>
-                    <Col className="text-right pt-3">
+                    {/* <Col className="text-right pt-4">
                       <Link to="/forgot-password">Forgot Password ?</Link>
-                    </Col>
+                    </Col> */}
                   </Row>
                 </form>
 
                 <div
                   id="confirmCode"
-                  className={this.state.confirmCodeState ? "show" : ""}
+                  className={this.state.confirmCodeShow ? "show" : ""}
                 >
                   <div className="login-separator">
                     <hr />
                     <span>Enter Code</span>
                   </div>
 
-                  <form onSubmit={this.loginHandler}>
+                  <form id="confirmCodeForm" onSubmit={this.loginHandler}>
                     <Row className="mx-0">
-                      <Col>
-                        <Input
-                          type="password"
-                          name="code1"
-                          id="code1"
-                          maxLength={1}
-                          className="code-control"
-                          required
-                          onChange={this.inputChangeHandler}
-                          disabled={
-                            this.state.disabledConfirmForm ? true : false
-                          }
-                        />
-                      </Col>
-                      <Col>
-                        <Input
-                          type="password"
-                          name="code2"
-                          id="code2"
-                          maxLength={1}
-                          className="code-control"
-                          required
-                          onChange={this.inputChangeHandler}
-                          disabled={
-                            this.state.disabledConfirmForm ? true : false
-                          }
-                        />
-                      </Col>
-                      <Col>
-                        <Input
-                          type="password"
-                          name="code3"
-                          id="code3"
-                          maxLength={1}
-                          className="code-control"
-                          required
-                          onChange={this.inputChangeHandler}
-                          disabled={
-                            this.state.disabledConfirmForm ? true : false
-                          }
-                        />
-                      </Col>
-                      <Col>
-                        <Input
-                          type="password"
-                          name="code4"
-                          id="code4"
-                          maxLength={1}
-                          className="code-control"
-                          required
-                          onChange={this.inputChangeHandler}
-                          disabled={
-                            this.state.disabledConfirmForm ? true : false
-                          }
-                        />
-                      </Col>
+                      {this.state.confirmCodeFields.map((field, index) => (
+                        <Col key={index}>
+                          <Input
+                            type="password"
+                            name={"code" + field}
+                            id={"code" + field}
+                            maxLength={1}
+                            className="code-control"
+                            required
+                            onChange={this.inputChangeHandler}
+                            disabled={
+                              this.state.disabledConfirmForm ? true : false
+                            }
+                          />
+                        </Col>
+                      ))}
                       <div className="w-100" />
-                      <Col>
+                      <Col className="pt-4">
+                        <a
+                          href="/"
+                          disabled={
+                            this.state.disabledConfirmForm ? true : false
+                          }
+                          onClick={this.resendCodeClickHandler}
+                        >
+                          Resend Code ?
+                        </a>
+                      </Col>
+                      <Col className="text-right">
                         <Button
                           color="success"
                           type="submit"
@@ -217,16 +239,6 @@ class Login extends Component {
                         >
                           Proceed
                         </Button>
-                      </Col>
-                      <Col className="text-right pt-3">
-                        <a
-                          href="/"
-                          disabled={
-                            this.state.disabledConfirmForm ? true : false
-                          }
-                        >
-                          Resend Code ?
-                        </a>
                       </Col>
                     </Row>
                   </form>

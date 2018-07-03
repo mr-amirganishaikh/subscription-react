@@ -3,7 +3,7 @@ import { Route, Switch } from "react-router-dom";
 
 import Aux from "../_Aux/_Aux";
 import Header from "../../components/Header/Header";
-import Subscribes from "../../components/Subscribes/Subscribes";
+import Orders from "../../components/Orders/Orders";
 import NewSubscription from "../../components/NewSubscription/NewSubscription";
 
 import "./AuthorizedLayout.scss";
@@ -17,9 +17,9 @@ export default class AuthorizedLayout extends Component {
 
   routes = [
     {
-      path: "/dashboard/subscriptions",
-      component: Subscribes,
-      pageTitle: "Subscription list"
+      path: "/dashboard/orders",
+      component: Orders,
+      pageTitle: "Orders History"
     },
     {
       path: "/dashboard/new-subscription",
@@ -36,6 +36,7 @@ export default class AuthorizedLayout extends Component {
     event.preventDefault();
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+    localStorage.removeItem("subscriberId");
     this.props.history.push("/");
   };
 

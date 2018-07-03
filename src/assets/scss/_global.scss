@@ -20,6 +20,17 @@ body {
       border-bottom: 1px solid #4285f4;
     }
   }
+  &.input-group {
+    .form-control {
+      border: 0;
+      border-bottom: 1px solid #ced4da;
+      &:focus:not([readonly]) {
+        -webkit-box-shadow: 0 1px 0 0 #4285f4;
+        box-shadow: 0 1px 0 0 #4285f4;
+        border-bottom: 1px solid #4285f4;
+      }
+    }
+  }
 }
 
 .material-icons {
@@ -58,6 +69,7 @@ body {
       margin-left: 4%;
       margin-right: 4%;
       margin-top: -1.25rem;
+      background-color: white;
       &.view-gradient {
         color: white !important;
       }
