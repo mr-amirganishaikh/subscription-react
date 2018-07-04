@@ -56,7 +56,7 @@ class Subscribes extends Component {
               <CardHeader className="indigo white-text">
                 <CardTitle className="mb-0">List of orders</CardTitle>
               </CardHeader>
-              <CardBody>
+              <CardBody className="table-responsive">
                 <table className="table table-hover">
                   <thead className="purple-text">
                     <tr>
